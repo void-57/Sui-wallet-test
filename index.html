@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sui Wallet</title>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha256.js"></script>
+    <script src="blakejs-custom.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script src="lib.sui.js"></script>
+    <script src="suiCrypto.js"></script>
+    <script src="suiBlockchainAPI.js"></script>
+
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        background: #fafafa;
+      }
+      h2 {
+        color: #333;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 4px;
+      }
+      input,
+      button {
+        margin: 5px 0;
+        padding: 6px;
+        width: 300px;
+      }
+      button {
+        cursor: pointer;
+      }
+      pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 6px;
+        overflow-x: auto;
+      }
+      a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .tx-entry {
+        border-bottom: 1px solid #ccc;
+        padding: 8px 0;
+      }
+      .incoming {
+        color: green;
+      }
+      .outgoing {
+        color: red;
+      }
+      .contract-interaction {
+        color: #555;
+      }
+      #pagination {
+        margin-top: 10px;
+        display: none;
+      }
+      #pagination button {
+        padding: 5px 10px;
+        margin: 0 5px;
+      }
+      #pageInfo {
+        font-weight: bold;
+      }
+      .tx-list {
+        background: #fff;
+        border-radius: 6px;
+        padding: 8px;
+        border: 1px solid #e0e0e0;
+      }
+      .meta {
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .empty {
+        padding: 20px;
+        color: #666;
+      }
+      .pager {
+        margin: 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .tx {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .tx:last-child {
+        border-bottom: none;
+      }
+      .digest {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .digest:hover {
+        text-decoration: underline;
+      }
+      .sent {
+        color: #b71c1c;
+        font-weight: 700;
+      }
+      .received {
+        color: #0b6b2e;
+        font-weight: 700;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-left: 8px;
+        background: #e9f7ef;
+        color: #0b6b2e;
+        border: 1px solid #d0efdd;
+      }
+      .badge.out {
+        background: #ffecec;
+        color: #b71c1c;
+        border: 1px solid #ffd6d6;
+      }
+      .filter-controls {
+        margin-bottom: 12px;
+      }
+      .filter-controls button {
+        width: auto;
+        background-color: #f0f0f0;
+      }
+      .filter-controls button.active {
+        background-color: #1a73e8;
+        color: white;
+        border-color: #1a73e8;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>Generate or Recover SUI Wallet</h2>
+    <input
+      id="suiInputKey"
+      placeholder="Enter Private Key (optional)"
+      size="60"
+    />
+    <button id="suiGenerateBtn">Generate / Recover</button>
+    <pre id="suiOutput"></pre>
+
+    <h2>Check SUI Balance</h2>
+    <input
+      id="suiAddressInput"
+      placeholder="Enter SUI Address (0x...)"
+      size="60"
+    />
+    <button id="suiBalanceBtn">Check Balance</button>
+    <pre id="suiBalanceOutput"></pre>
+
+    <h2>Transaction History</h2>
+    <div class="controls">
+      <input
+        id="addrInput"
+        type="text"
+        placeholder="Enter SUI address to see history (0x...)"
+        style="width: 420px"
+      />
+      <button id="fetchBtn">Get Transactions</button>
+      <div id="statusText" style="color: #444; font-size: 14px"></div>
+    </div>
+
+    <div class="filter-controls">
+      <button id="filterAllBtn" class="active">All</button>
+      <button id="filterSentBtn">Sent</button>
+      <button id="filterReceivedBtn">Received</button>
+    </div>
+
+    <div class="pager" id="pagerTop" style="display: none">
+      <button id="prevBtn">Prev</button>
+      <span id="pageInfo">Page 1</span>
+      <button id="nextBtn">Next</button>
+    </div>
+
+    <div class="tx-list" id="txList"></div>
+
+    <div class="pager" id="pagerBottom" style="display: none">
+      <button id="prevBtn2">Prev</button>
+      <span id="pageInfo2">Page 1</span>
+      <button id="nextBtn2">Next</button>
+    </div>
+
+    <script>
+      let suiWallet = null;
+
+      //  Generate or Recover Wallet
+      document.getElementById("suiGenerateBtn").onclick = async () => {
+        const input = document.getElementById("suiInputKey").value.trim();
+        const wallet = await suiCrypto.generateMultiChain(input);
+        suiWallet = wallet;
+        document.getElementById("addrInput").value = wallet.SUI.address;
+        document.getElementById("suiAddressInput").value = wallet.SUI.address;
+        document.getElementById("suiOutput").textContent = JSON.stringify(
+          wallet,
+          null,
+          2
+        );
+      };
+
+      //  Check Balance
+      document.getElementById("suiBalanceBtn").onclick = async () => {
+        const address = document.getElementById("suiAddressInput").value.trim();
+        if (!address || !address.startsWith("0x")) {
+          alert("Enter valid SUI address.");
+          return;
+        }
+        const balance = await suiBlockchainAPI.getBalance(address);
+        const suiBalance = (Number(balance) / 1e9).toFixed(6);
+        document.getElementById(
+          "suiBalanceOutput"
+        ).textContent = `Balance: ${suiBalance} SUI`;
+      };
+
+      // Transaction History
+      const PAGE_LIMIT = 10;
+
+      let currentFilter = "all"; 
+      let currentAddress = "";
+      let cursorSent = null;
+      let cursorReceived = null;
+      let prevCursors = [];
+      let currentPage = 1;
+
+      const addrInput = document.getElementById("addrInput");
+      const fetchBtn = document.getElementById("fetchBtn");
+      const txList = document.getElementById("txList");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const prevBtn2 = document.getElementById("prevBtn2");
+      const nextBtn2 = document.getElementById("nextBtn2");
+      const pagerTop = document.getElementById("pagerTop");
+      const pagerBottom = document.getElementById("pagerBottom");
+      const pageInfo = document.getElementById("pageInfo");
+      const pageInfo2 = document.getElementById("pageInfo2");
+      const statusText = document.getElementById("statusText");
+      const filterAllBtn = document.getElementById("filterAllBtn");
+      const filterSentBtn = document.getElementById("filterSentBtn");
+      const filterReceivedBtn = document.getElementById("filterReceivedBtn");
+
+      async function loadTransactions(address) {
+        statusText.textContent = "Fetching transactions...";
+        txList.innerHTML = "";
+
+        const { txs, hasNextPage, nextCursor } =
+          await suiBlockchainAPI.getTransactionHistory(
+            address,
+            currentFilter,
+            PAGE_LIMIT,
+            {
+              from: cursorSent,
+              to: cursorReceived,
+            }
+          );
+
+        cursorSent = nextCursor.from;
+        cursorReceived = nextCursor.to;
+
+        if (!txs.length) {
+          txList.innerHTML = '<div class="empty">No transactions found.</div>';
+          pagerTop.style.display = "none";
+          pagerBottom.style.display = "none";
+          statusText.textContent = "";
+          return;
+        }
+
+        pagerTop.style.display = "flex";
+        pagerBottom.style.display = "flex";
+
+        txs.forEach((tx) => {
+          const div = document.createElement("div");
+          div.className = "tx";
+          const dirClass = tx.direction === "Sent" ? "sent" : "received";
+          const badgeClass = tx.direction === "Sent" ? "badge out" : "badge";
+
+          div.innerHTML = `
+            <div class="${dirClass}">
+              ● ${tx.direction}
+              <a href="https://www.oklink.com/sui/tx/${
+                tx.digest
+              }" target="_blank" class="digest">${tx.digest}</a>
+              <span class="${badgeClass}">${
+            tx.direction === "Sent" ? "Out" : "In"
+          }</span>
+            </div>
+            <div class="meta">From: ${tx.from}</div>
+            <div class="meta">To: ${tx.to}</div>
+            <div class="meta">Amount: ${tx.amountSui} SUI</div>
+            <div class="meta">Date & Time: ${tx.datetime}</div>
+          `;
+          txList.appendChild(div);
+        });
+
+        prevBtn.disabled = prevCursors.length === 0;
+        prevBtn2.disabled = prevBtn.disabled;
+        nextBtn.disabled = !hasNextPage;
+        nextBtn2.disabled = nextBtn.disabled;
+        pageInfo.textContent = `Page ${currentPage}`;
+        pageInfo2.textContent = `Page ${currentPage}`;
+        statusText.textContent = "";
+      }
+
+      function setFilter(filter) {
+        currentFilter = filter;
+        filterAllBtn.classList.toggle("active", filter === "all");
+        filterSentBtn.classList.toggle("active", filter === "sent");
+        filterReceivedBtn.classList.toggle("active", filter === "received");
+
+        cursorSent = null;
+        cursorReceived = null;
+        prevCursors = [];
+        currentPage = 1;
+        if (currentAddress) loadTransactions(currentAddress);
+      }
+
+      fetchBtn.onclick = async () => {
+        const address = addrInput.value.trim();
+        if (!address.startsWith("0x")) {
+          alert("Please enter a valid SUI address!");
+          return;
+        }
+        currentAddress = address;
+        cursorSent = null;
+        cursorReceived = null;
+        prevCursors = [];
+        currentPage = 1;
+        setFilter("received");
+        await loadTransactions(address);
+      };
+
+      nextBtn.onclick = async () => {
+        if (!cursorSent && !cursorReceived) return;
+        prevCursors.push({ cursorSent, cursorReceived });
+        currentPage++;
+        await loadTransactions(currentAddress);
+      };
+      nextBtn2.onclick = () => nextBtn.click();
+
+      prevBtn.onclick = async () => {
+        if (!prevCursors.length) return;
+        const prev = prevCursors.pop();
+        cursorSent = prev.cursorSent;
+        cursorReceived = prev.cursorReceived;
+        currentPage--;
+        await loadTransactions(currentAddress);
+      };
+      prevBtn2.onclick = () => prevBtn.click();
+
+      addrInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") fetchBtn.click();
+      });
+
+      filterAllBtn.onclick = () => setFilter("all");
+      filterSentBtn.onclick = () => setFilter("sent");
+      filterReceivedBtn.onclick = () => setFilter("received");
+
+    </script>
+  </body>
+</html>
