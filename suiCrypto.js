@@ -176,4 +176,43 @@
 
     return result;
   };
+
+  // Sign Transaction 
+  suiCrypto.sign = async function (txBytes, suiPrivateKey) {
+    // Decode the private key from Bech32
+    const decoded = coinjs.bech32_decode(suiPrivateKey);
+    if (!decoded) throw new Error("Invalid SUI private key format.");
+    const keyBytes = coinjs.bech32_convert(decoded.data, 5, 8, false);
+    
+    // The first byte is the scheme flag (0x00 for Ed25519), the rest is the seed.
+    if (keyBytes[0] !== 0x00) {
+      throw new Error("Unsupported SUI private key scheme.");
+    }
+    const seed = new Uint8Array(keyBytes.slice(1));
+
+    // Re-derive the keypair from the seed
+    const keypair = nacl.sign.keyPair.fromSeed(seed);
+
+    // Decode the transaction bytes from base64
+    const txData = new Uint8Array(atob(txBytes).split('').map(c => c.charCodeAt(0)));
+
+    // Create the message to sign
+    const INTENT_BYTES = [0, 0, 0]; // IntentScope::TransactionData = 0
+    const messageToSign = new Uint8Array(INTENT_BYTES.length + txData.length);
+    messageToSign.set(INTENT_BYTES);
+    messageToSign.set(txData, INTENT_BYTES.length);
+
+    // Sign the message digest
+    const digest = blakejs.blake2b(messageToSign, null, 32);
+    const signature = nacl.sign.detached(digest, keypair.secretKey);
+
+    // Combine signature scheme flag (0x00 for Ed25519) with the signature and public key
+    const suiSignature = new Uint8Array(1 + signature.length + keypair.publicKey.length);
+    suiSignature[0] = 0x00; // Ed25519 scheme
+    suiSignature.set(signature, 1);
+    suiSignature.set(keypair.publicKey, 1 + signature.length);
+
+    return btoa(String.fromCharCode.apply(null, suiSignature));
+  };
+
 })("object" === typeof module ? module.exports : (window.suiCrypto = {}));

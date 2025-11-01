@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <title>Sui Wallet</title>
 
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha256.js"></script>
     <script src="blakejs-custom.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
@@ -27,12 +26,16 @@
       }
       input,
       button {
+        font-size: 14px;
         margin: 5px 0;
         padding: 6px;
         width: 300px;
       }
       button {
         cursor: pointer;
+      }
+      .input-group {
+        margin-bottom: 10px;
       }
       pre {
         background: #eee;
@@ -142,6 +145,150 @@
         border-color: #1a73e8;
         font-weight: bold;
       }
+      #sendForm {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 15px;
+      }
+      #sendForm .input-group {
+        margin-bottom: 15px;
+      }
+      #sendForm label {
+        font-weight: 600;
+        color: #333;
+      }
+      #sendForm input {
+        width: 100%;
+        max-width: 500px;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      #sendForm input:focus {
+        outline: none;
+        border-color: #1a73e8;
+      }
+      #sendSuiBtn,
+      #estimateGasBtn {
+        background: #1a73e8;
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      #sendSuiBtn:hover,
+      #estimateGasBtn:hover {
+        background: #1557b0;
+      }
+      #estimateGasBtn {
+        background: #48bb78;
+      }
+      #estimateGasBtn:hover {
+        background: #38a169;
+      }
+      #senderBalance {
+        font-size: 13px;
+        color: #1a73e8;
+        margin-top: 6px;
+        font-weight: 600;
+        padding: 6px;
+        background: #f0f7ff;
+        border-radius: 4px;
+        display: none;
+      }
+      #senderBalance.show {
+        display: block;
+      }
+      #sendOutput {
+        background: #f7fafc;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+        margin-top: 10px;
+      }
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s;
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 30px;
+        border: none;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s;
+      }
+      .modal-content h3 {
+        color: #333;
+        margin-top: 0;
+        border-bottom: 2px solid #1a73e8;
+        padding-bottom: 10px;
+      }
+      .modal-content button {
+        margin: 10px 5px 0 0;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+      }
+      #confirmSend {
+        background: #1a73e8;
+        color: white;
+        border: none;
+      }
+      #confirmSend:hover {
+        background: #1557b0;
+      }
+      #cancelSend {
+        background: #e0e0e0;
+        color: #333;
+        border: none;
+      }
+      #cancelSend:hover {
+        background: #d0d0d0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      .success-text {
+        color: #38a169;
+        font-weight: 600;
+      }
+      .error-text {
+        color: #e53e3e;
+        font-weight: 600;
+      }
     </style>
   </head>
 
@@ -163,6 +310,53 @@
     />
     <button id="suiBalanceBtn">Check Balance</button>
     <pre id="suiBalanceOutput"></pre>
+
+    <h2>Send SUI</h2>
+    <div id="sendForm">
+      <div class="input-group">
+        <label for="suiPrivateKey">Private Key (SUI/FLO/BTC):</label><br />
+        <input
+          id="suiPrivateKey"
+          type="password"
+          placeholder="Enter your private key"
+          style="width: 100%; max-width: 500px"
+        />
+        <div id="senderBalance"></div>
+      </div>
+      <div class="input-group">
+        <label for="recipientAddress">Recipient Address:</label><br />
+        <input
+          id="recipientAddress"
+          type="text"
+          placeholder="Enter SUI recipient address (0x...)"
+          style="width: 100%; max-width: 500px"
+        />
+      </div>
+      <div class="input-group">
+        <label for="sendAmount">Amount (SUI):</label><br />
+        <input
+          id="sendAmount"
+          type="number"
+          step="0.000000001"
+          placeholder="Enter amount to send"
+          style="width: 100%; max-width: 500px"
+          min="0"
+        />
+      </div>
+      <button id="estimateGasBtn">Estimate Gas</button>
+      <button id="sendSuiBtn">Send SUI</button>
+    </div>
+    <pre id="sendOutput"></pre>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>⚠️ Confirm Transaction</h3>
+        <div id="confirmationDetails"></div>
+        <button id="confirmSend">✅ Confirm & Send</button>
+        <button id="cancelSend">❌ Cancel</button>
+      </div>
+    </div>
 
     <h2>Transaction History</h2>
     <div class="controls">
@@ -198,6 +392,268 @@
 
     <script>
       let suiWallet = null;
+      let preparedTxData = null;
+      let cachedWallet = null;
+      let cachedBalance = null;
+
+      //  Auto-fetch balance for sender
+      document
+        .getElementById("suiPrivateKey")
+        .addEventListener("blur", async () => {
+          const privateKey = document
+            .getElementById("suiPrivateKey")
+            .value.trim();
+          const senderBalanceDiv = document.getElementById("senderBalance");
+
+          if (!privateKey) {
+            senderBalanceDiv.textContent = "";
+            senderBalanceDiv.classList.remove("show");
+            cachedWallet = null;
+            cachedBalance = null;
+            return;
+          }
+
+          senderBalanceDiv.textContent = "🔄 Fetching balance...";
+          senderBalanceDiv.classList.add("show");
+
+          try {
+            cachedWallet = await suiCrypto.generateMultiChain(privateKey);
+            const senderAddress = cachedWallet.SUI.address;
+
+            if (!senderAddress || !senderAddress.startsWith("0x")) {
+              throw new Error("Could not derive a valid SUI address.");
+            }
+
+            const balance = await suiBlockchainAPI.getBalance(
+              senderAddress,
+              "0x2::sui::SUI"
+            );
+            cachedBalance = (Number(balance) / 1e9).toFixed(9);
+            senderBalanceDiv.innerHTML = `
+            <strong>Address:</strong> ${senderAddress}<br>
+            <strong>Balance:</strong> ${cachedBalance} SUI
+          `;
+          } catch (error) {
+            senderBalanceDiv.textContent = `❌ Error: ${error.message}`;
+            cachedWallet = null;
+            cachedBalance = null;
+          }
+        });
+
+      // Estimate Gas
+      document.getElementById("estimateGasBtn").onclick = async () => {
+        const privateKey = document
+          .getElementById("suiPrivateKey")
+          .value.trim();
+        const recipientAddress = document
+          .getElementById("recipientAddress")
+          .value.trim();
+        const amount = document.getElementById("sendAmount").value.trim();
+        const sendOutput = document.getElementById("sendOutput");
+
+        if (!privateKey || !recipientAddress || !amount) {
+          alert("Please fill all fields.");
+          return;
+        }
+
+        if (
+          !recipientAddress.startsWith("0x") ||
+          recipientAddress.length !== 66
+        ) {
+          alert(
+            "Invalid recipient address format. Must be 0x followed by 64 hex characters."
+          );
+          return;
+        }
+
+        if (parseFloat(amount) <= 0) {
+          alert("Amount must be greater than 0.");
+          return;
+        }
+
+        sendOutput.textContent = "🔄 Estimating gas fee...";
+
+        try {
+          // Use cached wallet if available
+          if (!cachedWallet) {
+            cachedWallet = await suiCrypto.generateMultiChain(privateKey);
+            const balance = await suiBlockchainAPI.getBalance(
+              cachedWallet.SUI.address,
+              "0x2::sui::SUI"
+            );
+            cachedBalance = (Number(balance) / 1e9).toFixed(9);
+          }
+
+          const prepared = await suiBlockchainAPI.prepareSuiTransaction(
+            privateKey,
+            recipientAddress,
+            amount
+          );
+
+          const gasFee = (prepared.gasFee / 1e9).toFixed(9);
+          const totalCost = (parseFloat(amount) + parseFloat(gasFee)).toFixed(
+            9
+          );
+          const remaining = (
+            parseFloat(cachedBalance) - parseFloat(totalCost)
+          ).toFixed(9);
+
+          sendOutput.innerHTML = `
+<span class="success-text">✅ Gas Estimation Complete</span>
+
+<strong>Transaction Details:</strong>
+From: ${prepared.senderAddress}
+To: ${recipientAddress}
+Amount: ${amount} SUI
+Estimated Gas: ${gasFee} SUI
+─────────────────────────
+Total Cost: ${totalCost} SUI
+
+Current Balance: ${cachedBalance} SUI
+Remaining After: ${remaining} SUI
+          `;
+        } catch (error) {
+          console.error("Error estimating gas:", error);
+          sendOutput.innerHTML = `<span class="error-text">❌ Error: ${error.message}</span>`;
+        }
+      };
+
+      //  Send SUI 
+      document.getElementById("sendSuiBtn").onclick = async () => {
+        const privateKey = document
+          .getElementById("suiPrivateKey")
+          .value.trim();
+        const recipientAddress = document
+          .getElementById("recipientAddress")
+          .value.trim();
+        const amount = document.getElementById("sendAmount").value.trim();
+        const sendOutput = document.getElementById("sendOutput");
+
+        if (!privateKey || !recipientAddress || !amount) {
+          alert("Please fill all fields.");
+          return;
+        }
+
+        if (
+          !recipientAddress.startsWith("0x") ||
+          recipientAddress.length !== 66
+        ) {
+          alert(
+            "Invalid recipient address format. Must be 0x followed by 64 hex characters."
+          );
+          return;
+        }
+
+        if (parseFloat(amount) <= 0) {
+          alert("Amount must be greater than 0.");
+          return;
+        }
+
+        sendOutput.textContent = "🔄 Preparing transaction...";
+
+        try {
+          preparedTxData = await suiBlockchainAPI.prepareSuiTransaction(
+            privateKey,
+            recipientAddress,
+            amount
+          );
+
+          const gasFee = (preparedTxData.gasFee / 1e9).toFixed(9);
+          const totalCost = (parseFloat(amount) + parseFloat(gasFee)).toFixed(
+            9
+          );
+
+          const confirmationDetails = `
+            <p><strong>From:</strong><br>${preparedTxData.senderAddress}</p>
+            <p><strong>To:</strong><br>${recipientAddress}</p>
+            <p><strong>Amount:</strong> ${amount} SUI</p>
+            <p><strong>Estimated Gas Fee:</strong> ~${gasFee} SUI</p>
+            <p style="border-top: 2px solid #e0e0e0; padding-top: 10px; margin-top: 10px;">
+              <strong>Total Cost:</strong> ${totalCost} SUI
+            </p>
+            <p style="color: #e53e3e; font-size: 13px; margin-top: 10px;">
+              ⚠️ Please verify the details carefully before confirming.
+            </p>
+          `;
+
+          document.getElementById("confirmationDetails").innerHTML =
+            confirmationDetails;
+          document.getElementById("confirmationModal").style.display = "block";
+        } catch (error) {
+          console.error("Error preparing transaction:", error);
+          sendOutput.innerHTML = `<span class="error-text">❌ Error: ${error.message}</span>`;
+          preparedTxData = null;
+        }
+      };
+
+      document.getElementById("cancelSend").onclick = () => {
+        document.getElementById("confirmationModal").style.display = "none";
+        document.getElementById("sendOutput").textContent =
+          "❌ Transaction cancelled.";
+        preparedTxData = null;
+      };
+
+      document.getElementById("confirmSend").onclick = async () => {
+        if (!preparedTxData) {
+          alert("No transaction prepared. Please try again.");
+          return;
+        }
+
+        const sendOutput = document.getElementById("sendOutput");
+        sendOutput.textContent = "🔄 Signing and sending transaction...";
+        document.getElementById("confirmationModal").style.display = "none";
+
+        try {
+          const txResponse = await suiBlockchainAPI.signAndSendSuiTransaction(
+            preparedTxData
+          );
+
+          if (txResponse.error) {
+            throw new Error(txResponse.error.message);
+          }
+
+          const digest = txResponse.result?.digest;
+          if (digest) {
+            sendOutput.innerHTML = `
+<span class="success-text">✅ Transaction Sent Successfully!</span>
+
+<strong>Transaction Digest:</strong>
+${digest}
+
+<strong>View on Explorer:</strong>
+<a href="https://www.oklink.com/sui/tx/${digest}" target="_blank" style="color: #1a73e8;">
+ https://www.oklink.com/sui/tx/${digest}
+</a>
+
+            `;
+
+            // Clear form
+            document.getElementById("suiPrivateKey").value = "";
+            document.getElementById("recipientAddress").value = "";
+            document.getElementById("sendAmount").value = "";
+            document.getElementById("senderBalance").textContent = "";
+            document.getElementById("senderBalance").classList.remove("show");
+
+            // Reset cached data
+            cachedWallet = null;
+            cachedBalance = null;
+          } else {
+            throw new Error("Transaction failed. No digest returned.");
+          }
+        } catch (error) {
+          console.error("Error sending transaction:", error);
+          sendOutput.innerHTML = `<span class="error-text">❌ Transaction Failed</span>\n\n${error.message}`;
+        } finally {
+          preparedTxData = null;
+        }
+      };
+
+      // Close modal if clicked outside
+      window.onclick = function (event) {
+        if (event.target == document.getElementById("confirmationModal")) {
+          document.getElementById("cancelSend").click();
+        }
+      };
 
       //  Generate or Recover Wallet
       document.getElementById("suiGenerateBtn").onclick = async () => {
@@ -220,7 +676,10 @@
           alert("Enter valid SUI address.");
           return;
         }
-        const balance = await suiBlockchainAPI.getBalance(address);
+        const balance = await suiBlockchainAPI.getBalance(
+          address,
+          "0x2::sui::SUI"
+        );
         const suiBalance = (Number(balance) / 1e9).toFixed(6);
         document.getElementById(
           "suiBalanceOutput"
@@ -230,7 +689,7 @@
       // Transaction History
       const PAGE_LIMIT = 10;
 
-      let currentFilter = "all"; 
+      let currentFilter = "all";
       let currentAddress = "";
       let cursorSent = null;
       let cursorReceived = null;
@@ -368,7 +827,6 @@
       filterAllBtn.onclick = () => setFilter("all");
       filterSentBtn.onclick = () => setFilter("sent");
       filterReceivedBtn.onclick = () => setFilter("received");
-
     </script>
   </body>
 </html>
