@@ -5,10 +5,7 @@
     <title>Sui Wallet</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha256.js"></script>
-    <script src="blakejs-custom.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
     <script src="lib.sui.js"></script>
     <script src="suiCrypto.js"></script>
     <script src="suiBlockchainAPI.js"></script>
@@ -518,7 +515,7 @@ Remaining After: ${remaining} SUI
         }
       };
 
-      //  Send SUI 
+      //  Send SUI
       document.getElementById("sendSuiBtn").onclick = async () => {
         const privateKey = document
           .getElementById("suiPrivateKey")
